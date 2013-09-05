@@ -1,0 +1,30 @@
+{
+  "name": "node-seleniumgrid",
+  "description": "a selenium grid built in nodejs",
+  "private": false,
+  "author": {
+    "name": "Testingbot",
+    "email": "info@testingbot.com"
+  },
+  "main": "./lib/server",
+  "version": "0.1.0",
+  "dependencies": {
+    "tracer": "*",
+    "color": "*",
+    "async": "*"
+  },
+  "directories": {
+    "lib": "./lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/testingbot/node-seleniumgrid.git"
+  },
+  "bugs": {
+    "url": "https://github.com/testingbot/node-seleniumgrid/issues"
+  },
+  "engines": { "node": ">= 0.6.15" },
+  "scripts": {
+	"test": "mocha tests/*"
+  }
+}
