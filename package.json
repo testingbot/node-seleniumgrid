@@ -2,16 +2,24 @@
   "name": "node-seleniumgrid",
   "description": "a selenium grid built in nodejs",
   "private": false,
+  "tags":[
+    "selenium",
+    "grid"
+  ],
   "author": {
     "name": "Testingbot",
     "email": "info@testingbot.com"
   },
-  "main": "./lib/server",
+  "main": "./server.js",
+  "bin":{
+    "node-seleniumgrid": "./lib/bin.js"
+  },
   "version": "0.1.0",
   "dependencies": {
-    "tracer": "*",
-    "color": "*",
-    "async": "*"
+    "argparse": "~0.1.10",
+    "async": "*",
+    "colors": "~0.6.0-1",
+    "tracer": "*"
   },
   "directories": {
     "lib": "./lib"
@@ -25,6 +33,6 @@
   },
   "engines": { "node": ">= 0.6.15" },
   "scripts": {
-	"test": "mocha tests/*"
+  "test": "mocha tests/*"
   }
 }
