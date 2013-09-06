@@ -1,6 +1,6 @@
 {
   "name": "node-seleniumgrid",
-  "description": "a selenium grid built in nodejs",
+  "description": "A Selenium grid built in NodeJS used in production on TestingBot.com",
   "private": false,
   "tags":[
     "selenium",
