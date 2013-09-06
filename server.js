@@ -22,17 +22,18 @@ var net = require('net');
 var repl = require("repl");
 
 // servlets
-var registerServlet = require('./registerservlet');
-var statusServlet = require('./statusservlet');
-var requestHandler = require('./requesthandler');
-var hubStatusServlet = require('./hubstatusservlet');
-var unregisterServlet = require('./unregisterservlet');
-var welcomeServlet = require('./welcomeservlet');
+var registerServlet = require('./lib/registerservlet');
+var statusServlet = require('./lib/statusservlet');
+var requestHandler = require('./lib/requesthandler');
+var hubStatusServlet = require('./lib/hubstatusservlet');
+var unregisterServlet = require('./lib/unregisterservlet');
+var welcomeServlet = require('./lib/welcomeservlet');
 
-registry = require('./registry');
-var models = require('./models');
-var log = require('./log');
-store = require('./store');
+registry = require('./lib/registry');
+var models = require('./lib/models');
+var parser = require('./lib/parser');
+var log = require('./lib/log');
+store = require('./lib/store');
 var domain = require('domain');
 
 // process.setgid("node");
@@ -70,133 +71,142 @@ var parseIncoming = function(req, res, cb) {
 	return cb(new models.Response(400, "Unable to handle request - Invalid endpoint or request."));
 };
 
-var serverDomain = domain.create();
-var server;
-
-serverDomain.on('error', function(e) {
-    log.warn(e);
-    log.warn(e.stack);
-});
-
-serverDomain.run(function() {
-	server = http.createServer(function(req, res) {
-	  var url = req.url.toString();
-	  
-	  req.on("close", function(err) {
-	  	log.warn("!error: on close");
-	  });
-
-	  res.on("close", function() {
-	  	log.warn("!error: response socket closed before we could send");
-	  });
-
-	  var reqd = domain.create();
-	  reqd.add(req);
-	  reqd.add(res);
-
-	  res.socket.setTimeout(6 * 60 * 1000);
-	  res.socket.removeAllListeners('timeout');
-	  req.on('error', function(e) {
-	  	log.warn(e);
-	  });
-
-	  reqd.on('error', function(er) {
-	      log.warn(er);
-	      log.warn(er.stack);
-	      log.warn(req.url);
-	      try {
-	        res.writeHead(500);
-	        res.end('Error - Something went wrong: ' + er.message);
-	      } catch (er) {
-	        log.warn('Error sending 500');
-	        log.warn(er);
-	      }
-	    });
-
-	  res.on('error', function(e) { log.warn(e); });
-	  
-	  res.socket.once('timeout', function() {
-	  	try {
-		    res.writeHead(500, {'Content-Type': 'text/plain'});
-	    	res.end('Error - Socket timed out after 6 minutes');
-	    } catch (e) {
-
-	    }
-	    try {
-	    	res.socket.destroy();
-		} catch (e) {
-
-		}
-	  });
-
-	  parseIncoming(req, res, function(response) {
-		  res.writeHead(response.statusCode, response.headers);
-		  res.end(response.body);
-	  });
-
-	}).listen(4444, '0.0.0.0');
-});
-server.httpAllowHalfOpen = true;
-
-var manager = net.createServer(function(socket) {
-repl.start({
-    prompt: "node via TCP socket> ",
-    input: socket,
-    output: socket,
-    useGlobal: true
-  }).on('exit', function() {
-    socket.end();
-  });
-}).listen(4446, '127.0.0.1');
-
-server.on('clientError', function(exception, socket) {
-    try {
-    	if (socket.parser.incoming.url === "/grid/register") {
-    		return;
-    	}
-    } catch (e) {}
-    if (exception.message.indexOf('ECONNRESET') > -1) {
-    	log.debug(exception);
-    	return;
-    }
-    
-    log.warn('!error: client error');
-    log.warn(exception);
-    log.warn(exception.stack);
-    log.warn(socket);
-});
-
-process.on('SIGTERM', function() {
-	if (registry.pendingRequests.length > 0) {
-		log.warn("Can't stop hub just yet, pending requests!");
-		// try now
-		registry.processPendingRequest();
-
-		return;
-	}
-
-	log.info("Stopping hub");
-	server.close();
-});
-
-
-setInterval(function() {
-	// garbage collection
-	store.gc();
+function main(args) {
+	store.setConfig(args);
 	
-}, 30 * 60 * 1000);
+	var serverDomain = domain.create();
+	var server;
 
-process.on('uncaughtException', function(err) {
-	log.warn("! Uncaught Exception occurred");
-	log.warn(err);
-	log.warn(err.stack);
-});
+	serverDomain.on('error', function(e) {
+	    log.warn(e);
+	    log.warn(e.stack);
+	});
 
-server.on('close', function () {
-	store.quit();
-	process.exit();
-});
+	serverDomain.run(function() {
+		server = http.createServer(function(req, res) {
+		  var url = req.url.toString();
+		  
+		  req.on("close", function(err) {
+		  	log.warn("!error: on close");
+		  });
 
-module.exports = server;
+		  res.on("close", function() {
+		  	log.warn("!error: response socket closed before we could send");
+		  });
 
-log.info("Server booting up... Listening on " + (parseInt(process.argv[2], 10) || 4444));
+		  var reqd = domain.create();
+		  reqd.add(req);
+		  reqd.add(res);
+
+		  res.socket.setTimeout(6 * 60 * 1000);
+		  res.socket.removeAllListeners('timeout');
+		  req.on('error', function(e) {
+		  	log.warn(e);
+		  });
+
+		  reqd.on('error', function(er) {
+		      log.warn(er);
+		      log.warn(er.stack);
+		      log.warn(req.url);
+		      try {
+		        res.writeHead(500);
+		        res.end('Error - Something went wrong: ' + er.message);
+		      } catch (er) {
+		        log.warn('Error sending 500');
+		        log.warn(er);
+		      }
+		    });
+
+		  res.on('error', function(e) { log.warn(e); });
+		  
+		  res.socket.once('timeout', function() {
+		  	try {
+			    res.writeHead(500, {'Content-Type': 'text/plain'});
+		    	res.end('Error - Socket timed out after 6 minutes');
+		    } catch (e) {
+
+		    }
+		    try {
+		    	res.socket.destroy();
+			} catch (e) {
+
+			}
+		  });
+
+		  parseIncoming(req, res, function(response) {
+			  res.writeHead(response.statusCode, response.headers);
+			  res.end(response.body);
+		  });
+
+		}).listen(4444, '0.0.0.0');
+	});
+	server.httpAllowHalfOpen = true;
+
+	var manager = net.createServer(function(socket) {
+	repl.start({
+	    prompt: "node via TCP socket> ",
+	    input: socket,
+	    output: socket,
+	    useGlobal: true
+	  }).on('exit', function() {
+	    socket.end();
+	  });
+	}).listen(4446, '127.0.0.1');
+
+	server.on('clientError', function(exception, socket) {
+	    try {
+	    	if (socket.parser.incoming.url === "/grid/register") {
+	    		return;
+	    	}
+	    } catch (e) {}
+	    if (exception.message.indexOf('ECONNRESET') > -1) {
+	    	log.debug(exception);
+	    	return;
+	    }
+	    
+	    log.warn('!error: client error');
+	    log.warn(exception);
+	    log.warn(exception.stack);
+	    log.warn(socket);
+	});
+
+	process.on('SIGTERM', function() {
+		if (registry.pendingRequests.length > 0) {
+			log.warn("Can't stop hub just yet, pending requests!");
+			// try now
+			registry.processPendingRequest();
+
+			return;
+		}
+
+		log.info("Stopping hub");
+		server.close();
+	});
+
+
+	setInterval(function() {
+		// garbage collection
+		store.gc();
+		
+	}, 30 * 60 * 1000);
+
+	process.on('uncaughtException', function(err) {
+		log.warn("! Uncaught Exception occurred");
+		log.warn(err);
+		log.warn(err.stack);
+	});
+
+	server.on('close', function () {
+		store.quit();
+		process.exit();
+	});
+
+	log.info("Server booting up... Listening on " + (parseInt(process.argv[2], 10) || 4444));
+}
+
+if (require.main === module) {
+	var args = parser.parseArgs();
+	main(args);
+}
+
+module.exports.run = main;

@@ -11,8 +11,5 @@
 "org.openqa.grid.internal.utils.TestingBotCapabilityMatcher",
     "throwOnCapabilityNotPresent" : false,
     "nodePolling" : 5000,
-    "unregisterIfStillDownAfter": 30000,
-    "useTestingBotFallback" : true,
-    "testingbot_key":"key",
-    "testingbot_secret":"secret"
+    "unregisterIfStillDownAfter": 30000
 }
