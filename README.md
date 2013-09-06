@@ -1,7 +1,7 @@
 node-seleniumgrid
 =================
 
-Selenium Hub/Grid built in nodeJS and used in production on TestingBot.com
+Selenium Hub/Grid built in nodeJS and used in production on [TestingBot.com](http://testingbot.com)
 At TestingBot we've been using this code for 11 months now, running on a single CPU server with the latest version of nodejs.
 
 We built this to replace the Selenium grid functionality that comes with the default Selenium source code in Java.
