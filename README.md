@@ -23,8 +23,8 @@ General:
 User Quick Start
 ------------
 
-* npm install node-seleniumgrid
-* node-seleniumgrid [testingbot_key] [testingbot_secret]
+* sudo npm -g install node-seleniumgrid
+* node-seleniumgrid -k testingbot_key -s testingbot_secret
 
 Troubleshooting
 ------------
@@ -35,7 +35,7 @@ Tests
 ------------
 
 There are tests included in this project, to run them, please use mocha.
-  mocha tests/*.js
+    mocha tests/*.js
 
 Contributing
 ------------
