@@ -35,24 +35,26 @@ Now run a simple Selenium test against your new grid, depending on the capabilit
 2. start a node `java -jar selenium-standalone.jar -role node -hub http://my-computer-ip:4444/grid/register`
 3. point your test to run on my-computer-ip port 4444:
 
-	require "rubygems"
-	require "selenium-webdriver" 
-	require "selenium/client"
+```ruby
+require "rubygems"
+require "selenium-webdriver" 
+require "selenium/client"
 
-	caps = {
-	  :browserName => "firefox",
-	  :version => "22",
-	  :platform => "WINDOWS"
-	}
+caps = {
+  :browserName => "firefox",
+  :version => "22",
+  :platform => "WINDOWS"
+}
 
-	urlhub = "http://my-computer-ip:4444/wd/hub"
-	client = Selenium::WebDriver::Remote::Http::Default.new
-	client.timeout = 120
+urlhub = "http://my-computer-ip:4444/wd/hub"
+client = Selenium::WebDriver::Remote::Http::Default.new
+client.timeout = 120
 
-	@webdriver = Selenium::WebDriver.for :remote, :url => urlhub, :desired_capabilities => caps, :http_client => client
-	@webdriver.navigate.to "https://www.google.com"
-	puts @webdriver.title
-	@webdriver.quit
+@webdriver = Selenium::WebDriver.for :remote, :url => urlhub, :desired_capabilities => caps, :http_client => client
+@webdriver.navigate.to "https://www.google.com"
+puts @webdriver.title
+@webdriver.quit
+```
 
 Troubleshooting
 ------------
