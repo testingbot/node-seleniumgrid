@@ -15,7 +15,6 @@ limitations under the License.
 */
 
 var http = require('http');
-http.globalAgent.maxSockets = Infinity;
 
 var url = require('url');
 var net = require('net');
@@ -35,9 +34,6 @@ var parser = require('./lib/parser');
 var log = require('./lib/log');
 store = require('./lib/store');
 var domain = require('domain');
-
-// process.setgid("node");
-// process.setuid("node");
 
 var servletRoutes = {
 	"/grid/api/proxy" : statusServlet,
@@ -182,13 +178,6 @@ function main(args) {
 		log.info("Stopping hub");
 		server.close();
 	});
-
-
-	setInterval(function() {
-		// garbage collection
-		store.gc();
-		
-	}, 30 * 60 * 1000);
 
 	process.on('uncaughtException', function(err) {
 		log.warn("! Uncaught Exception occurred");

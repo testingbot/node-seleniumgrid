@@ -203,7 +203,6 @@ describe('RequestHandler', function() {
 								// force the registry to use the badNode first
 								// the goodNode has been used recently
 								var node = store.getNode('127.0.0.1', 5584);
-								node.lastUsed = (new Date()).getTime();
 								store.updateNode(node, d);
 							});
 				});
