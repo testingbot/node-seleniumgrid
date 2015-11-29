@@ -1,5 +1,5 @@
 /*
-Copyright 2013 TestingBot
+Copyright TestingBot
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,23 +36,29 @@ store = require('./lib/store');
 var domain = require('domain');
 
 var servletRoutes = {
+	"/selenium-server/driver" : rcRequestHandler,
 	"/grid/api/proxy" : statusServlet,
 	"/grid/register" : registerServlet,
 	"/grid/unregister" : unregisterServlet,
-	"/selenium-server/driver" : requestHandler,
-	"/wd/hub/session" : requestHandler,
-	"/grid/api/hub" : hubStatusServlet
+	"/grid/api/hub" : hubStatusServlet,
+	"/wd/hub/session" : webdriverRequestHandler
 };
 
 var parseIncoming = function(req, res, cb) {
+	req.setEncoding('utf8');
 	var srvUrl = url.parse(req.url.toString(), true);
+	var servlet, route, common;
+
 	if (servletRoutes[srvUrl.pathname]) {
-		var servlet = servletRoutes[srvUrl.pathname];
+		servlet = servletRoutes[srvUrl.pathname];
 		return servlet.handleRequest(req, cb, res);
+	} else if (common = servletRoutes[srvUrl.pathname.substring(0, 15)]) {
+		// webdriver and grid/register have the same 15 char base path
+		// this should be faster than the stuff below
+		return common.handleRequest(req, cb, res);
 	} else {
 		// slower lookup of routes
-		var servlet;
-		for (var route in servletRoutes) {
+		for (route in servletRoutes) {
 			if (route === srvUrl.pathname.substring(0, route.length)) {
 				servlet = servletRoutes[route];
 				return servlet.handleRequest(req, cb, res);
@@ -62,9 +68,13 @@ var parseIncoming = function(req, res, cb) {
 
 	if (srvUrl.pathname === '/') {
 		return welcomeServlet.handleRequest(req, cb, res);
+	} else if (srvUrl.pathname === '/robots.txt') {
+		return welcomeServlet.robots(req, cb, res);
+	} else if (srvUrl.pathname === '/wd/hub/status') {
+		return welcomeServlet.status(req, cb, res);
 	}
 	
-	return cb(new models.Response(400, "Unable to handle request - Invalid endpoint or request."));
+	return cb("Invalid endpoint: " + req.url.toString(), new models.Response(400, "ERROR Unable to handle request - Invalid endpoint or request. (" + req.url.toString() + ")", {'Content-Type': 'text/plain'}));
 };
 
 function main(args) {
